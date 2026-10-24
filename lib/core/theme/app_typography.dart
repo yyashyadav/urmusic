@@ -5,8 +5,22 @@ import 'app_colors.dart';
 class AppTypography {
   AppTypography._();
 
+  static TextStyle get headlineLarge => GoogleFonts.inter(
+        fontSize: 28,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textPrimary,
+        letterSpacing: -0.5,
+      );
+
+  static TextStyle get headlineMedium => GoogleFonts.inter(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+        letterSpacing: -0.3,
+      );
+
   static TextStyle get titleLarge => GoogleFonts.inter(
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
       );

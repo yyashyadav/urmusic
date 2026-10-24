@@ -1,122 +1,182 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/app_network_image.dart';
+import '../application/playback_controller.dart';
 
-/// Clean, professional MiniPlayer docked above the bottom navigation bar,
-/// matching BlackHole's minimalist AMOLED layout.
-class MiniPlayer extends StatefulWidget {
+class MiniPlayer extends ConsumerWidget {
   final VoidCallback? onTap;
 
   const MiniPlayer({super.key, this.onTap});
 
   @override
-  State<MiniPlayer> createState() => _MiniPlayerState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(playbackControllerProvider);
+    final controller = ref.read(playbackControllerProvider.notifier);
+    final track = state.currentTrack;
 
-class _MiniPlayerState extends State<MiniPlayer> {
-  bool _isPlaying = false;
-  bool _isFavorite = false;
+    if (track == null) return const SizedBox.shrink();
 
-  @override
-  Widget build(BuildContext context) {
+    final isLiked = state.isTrackLiked(track.id);
+
     return Container(
-      color: Colors.transparent,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Thin linear progress bar at the top of the player
-          LinearProgressIndicator(
-            value: 0.35, // Demo progress (35%)
-            minHeight: 2,
-            backgroundColor: Colors.transparent,
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
-          ),
-
-          InkWell(
-            onTap: widget.onTap ??
-                () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Full Player will open here'),
-                      duration: Duration(milliseconds: 1000),
-                    ),
-                  );
-                },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  // Album art square
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      color: AppColors.surfaceElevated,
-                      child: const Icon(
-                        Icons.music_note_rounded,
-                        color: AppColors.textSecondary,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Song Title & Artist
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'No song playing',
-                          style: AppTypography.titleSmall.copyWith(fontSize: 14),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Select a track to start playback',
-                          style: AppTypography.bodySmall,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Favorite Button
-                  IconButton(
-                    icon: Icon(
-                      _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                      color: _isFavorite ? AppColors.accent : AppColors.textSecondary,
-                      size: 22,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isFavorite = !_isFavorite;
-                      });
-                    },
-                  ),
-
-                  // Play / Pause Button
-                  IconButton(
-                    icon: Icon(
-                      _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                      color: AppColors.textPrimary,
-                      size: 28,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isPlaying = !_isPlaying;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
+      margin: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.glassBorder, width: 0.8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap ??
+                    () {
+                      // Opening Now Playing will be connected in full player cycle
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Now Playing: ${track.title} - ${track.artist}'),
+                          duration: const Duration(milliseconds: 900),
+                          backgroundColor: AppColors.surfaceElevated,
+                        ),
+                      );
+                    },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: Row(
+                    children: [
+                      // Thumbnail
+                      AppNetworkImage(
+                        url: track.thumbnailUrl,
+                        width: 44,
+                        height: 44,
+                        borderRadius: 8,
+                      ),
+                      const SizedBox(width: 10),
+
+                      // Title & Artist
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              track.title,
+                              style: AppTypography.titleSmall.copyWith(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              track.artist,
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.accentLight,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Heart button
+                      IconButton(
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        icon: Icon(
+                          isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                          color: isLiked ? AppColors.accent : AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        onPressed: () => controller.toggleFavorite(track.id),
+                      ),
+
+                      // Previous button
+                      IconButton(
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        icon: const Icon(
+                          Icons.skip_previous_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        onPressed: controller.previous,
+                      ),
+
+                      // Play / Pause circular purple button
+                      GestureDetector(
+                        onTap: controller.togglePlayPause,
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: const BoxDecoration(
+                            color: AppColors.accent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
+                      ),
+
+                      // Next button
+                      IconButton(
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        icon: const Icon(
+                          Icons.skip_next_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        onPressed: controller.next,
+                      ),
+
+                      // Queue icon
+                      IconButton(
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        icon: const Icon(
+                          Icons.playlist_play_rounded,
+                          color: AppColors.textSecondary,
+                          size: 22,
+                        ),
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Slim purple progress line at bottom of miniplayer
+            LinearProgressIndicator(
+              value: state.progressFraction,
+              minHeight: 2,
+              backgroundColor: Colors.transparent,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accent),
+            ),
+          ],
+        ),
       ),
     );
   }
