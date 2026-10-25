@@ -5,6 +5,8 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../application/playback_controller.dart';
 
+import 'now_playing_screen.dart';
+
 class MiniPlayer extends ConsumerWidget {
   final VoidCallback? onTap;
 
@@ -42,17 +44,7 @@ class MiniPlayer extends ConsumerWidget {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: onTap ??
-                    () {
-                      // Opening Now Playing will be connected in full player cycle
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Now Playing: ${track.title} - ${track.artist}'),
-                          duration: const Duration(milliseconds: 900),
-                          backgroundColor: AppColors.surfaceElevated,
-                        ),
-                      );
-                    },
+                onTap: onTap ?? () => NowPlayingScreen.show(context),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   child: Row(

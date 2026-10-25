@@ -30,6 +30,21 @@ void main() {
     // Verify MiniPlayer displays the initial track
     expect(find.text('Golden Hour', skipOffstage: false), findsWidgets);
 
+    // Tap MiniPlayer to open NowPlayingScreen
+    await tester.tap(find.text('Golden Hour').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verify Now Playing screen elements
+    expect(find.text('NOW PLAYING'), findsOneWidget);
+    expect(find.text('JVKE'), findsOneWidget);
+    expect(find.text('Up Next'), findsOneWidget);
+
+    // Tap back button on Now Playing screen
+    await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
     // Tap Search tab icon
     await tester.tap(find.byIcon(Icons.search_rounded).last);
     await tester.pump();
