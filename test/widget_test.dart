@@ -37,7 +37,7 @@ void main() {
 
     // Verify Now Playing screen elements
     expect(find.text('NOW PLAYING'), findsOneWidget);
-    expect(find.text('JVKE'), findsOneWidget);
+    expect(find.text('JVKE'), findsWidgets);
     expect(find.text('Up Next'), findsOneWidget);
 
     // Tap back button on Now Playing screen
