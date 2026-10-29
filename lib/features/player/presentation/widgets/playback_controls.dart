@@ -59,11 +59,24 @@ class PlaybackControls extends StatelessWidget {
                 ),
               ],
             ),
-            child: Icon(
-              state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              color: Colors.white,
-              size: 34,
-            ),
+            child: state.isBuffering
+                ? const Center(
+                    child: SizedBox(
+                      width: 26,
+                      height: 26,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                : Icon(
+                    state.isPlaying
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 34,
+                  ),
           ),
         ),
 
