@@ -16,8 +16,13 @@ class BrowseCategory {
 /// 2-column grid of gradient "Browse all" genre cards matching Search.png.
 class BrowseAllGrid extends StatelessWidget {
   final List<BrowseCategory> categories;
+  final ValueChanged<BrowseCategory>? onCategoryTap;
 
-  const BrowseAllGrid({super.key, required this.categories});
+  const BrowseAllGrid({
+    super.key,
+    required this.categories,
+    this.onCategoryTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +39,7 @@ class BrowseAllGrid extends StatelessWidget {
       itemBuilder: (context, index) {
         final cat = categories[index];
         return GestureDetector(
-          onTap: () {},
+          onTap: () => onCategoryTap?.call(cat),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),

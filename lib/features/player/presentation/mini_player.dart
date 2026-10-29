@@ -123,11 +123,24 @@ class MiniPlayer extends ConsumerWidget {
                             color: AppColors.accent,
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(
-                            state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                            color: Colors.white,
-                            size: 22,
-                          ),
+                          child: state.isBuffering
+                              ? const Center(
+                                  child: SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : Icon(
+                                  state.isPlaying
+                                      ? Icons.pause_rounded
+                                      : Icons.play_arrow_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
                         ),
                       ),
 

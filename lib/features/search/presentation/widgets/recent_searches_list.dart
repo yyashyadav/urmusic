@@ -20,27 +20,37 @@ class RecentSearchItem {
 /// List of recent search items matching Search.png design.
 class RecentSearchesList extends StatelessWidget {
   final List<RecentSearchItem> items;
+  final ValueChanged<RecentSearchItem>? onItemTap;
 
-  const RecentSearchesList({super.key, required this.items});
+  const RecentSearchesList({
+    super.key,
+    required this.items,
+    this.onItemTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: items.map((item) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Row(
-            children: [
-              // Thumbnail
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: AppNetworkImage(
-                  url: item.thumbnailUrl,
-                  width: 52,
-                  height: 52,
-                  borderRadius: 8,
-                ),
-              ),
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => onItemTap?.call(item),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+              child: Row(
+                children: [
+                  // Thumbnail
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: AppNetworkImage(
+                      url: item.thumbnailUrl,
+                      width: 52,
+                      height: 52,
+                      borderRadius: 8,
+                    ),
+                  ),
               const SizedBox(width: 14),
 
               // Title + subtitle
@@ -83,8 +93,10 @@ class RecentSearchesList extends StatelessWidget {
               ),
             ],
           ),
-        );
-      }).toList(),
+        ),
+      ),
+    );
+  }).toList(),
     );
   }
 }

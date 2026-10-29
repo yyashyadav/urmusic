@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../player/application/playback_controller.dart';
+import '../../player/presentation/now_playing_screen.dart';
+import '../application/search_controller.dart' as app_search;
 import 'widgets/browse_all_grid.dart';
 import 'widgets/recent_searches_list.dart';
+import 'widgets/search_results_list.dart';
+import 'widgets/search_shimmer_skeleton.dart';
 
-class SearchScreen extends StatefulWidget {
+class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreenState extends ConsumerState<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
 
   // Mock data matching Search.png
@@ -70,8 +76,26 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
+  void _onSearchChanged(String value) {
+    ref.read(app_search.searchControllerProvider.notifier).onQueryChanged(value);
+  }
+
+  void _onCategoryTapped(String genre) {
+    _controller.text = genre;
+    ref.read(app_search.searchControllerProvider.notifier).executeSearch(genre);
+  }
+
+  void _clearSearch() {
+    _controller.clear();
+    ref.read(app_search.searchControllerProvider.notifier).clearSearch();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final searchState = ref.watch(app_search.searchControllerProvider);
+    final playbackState = ref.watch(playbackControllerProvider);
+    final playbackController = ref.read(playbackControllerProvider.notifier);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -114,10 +138,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           color: AppColors.textSecondary,
                           size: 20,
                         ),
-                        onPressed: () {
-                          _controller.clear();
-                          setState(() {});
-                        },
+                        onPressed: _clearSearch,
                       )
                     : null,
                 filled: true,
@@ -139,34 +160,160 @@ class _SearchScreenState extends State<SearchScreen> {
                       const BorderSide(color: AppColors.accent, width: 1.5),
                 ),
               ),
-              onChanged: (_) => setState(() {}),
+              onChanged: _onSearchChanged,
+              onSubmitted: (val) {
+                if (val.trim().isNotEmpty) {
+                  ref
+                      .read(app_search.searchControllerProvider.notifier)
+                      .executeSearch(val);
+                }
+              },
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
 
-            // Recent Searches section
-            Text(
-              'Recent searches',
-              style: AppTypography.titleLarge.copyWith(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
+            // Dynamic Search Content based on SearchStatus
+            if (searchState.status == app_search.SearchStatus.loading) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  'Searching for "${searchState.query}"...',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            RecentSearchesList(items: _recentSearches),
-
-            const SizedBox(height: 28),
-
-            // Browse All section
-            Text(
-              'Browse all',
-              style: AppTypography.titleLarge.copyWith(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
+              const SearchShimmerSkeleton(),
+            ] else if (searchState.status == app_search.SearchStatus.success) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Results for "${searchState.query}"',
+                    style: AppTypography.titleLarge.copyWith(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    '${searchState.results.length} tracks',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 14),
-            BrowseAllGrid(categories: _categories),
+              const SizedBox(height: 12),
+              SearchResultsList(
+                tracks: searchState.results,
+                currentTrackId: playbackState.currentTrack?.id,
+                isPlaying: playbackState.isPlaying,
+                onTrackTap: (track) {
+                  playbackController.playTrack(
+                    track,
+                    newQueue: searchState.results,
+                  );
+                  NowPlayingScreen.show(context);
+                },
+              ),
+            ] else if (searchState.status == app_search.SearchStatus.empty) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 60),
+                child: Center(
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.search_off_rounded,
+                        color: AppColors.textMuted,
+                        size: 52,
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        'No results found for "${searchState.query}"',
+                        style: AppTypography.titleMedium.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Try searching by song title, artist, or album',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ] else if (searchState.status == app_search.SearchStatus.error) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40),
+                child: Center(
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.cloud_off_rounded,
+                        color: AppColors.accentLight,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        searchState.errorMessage ?? 'Search error occurred',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          ref
+                              .read(app_search.searchControllerProvider.notifier)
+                              .executeSearch(searchState.query);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.accent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: const Text('Try Again'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ] else ...[
+              // Idle state: Recent Searches + Browse All (matches Search.png)
+              Text(
+                'Recent searches',
+                style: AppTypography.titleLarge.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              RecentSearchesList(
+                items: _recentSearches,
+                onItemTap: (item) => _onCategoryTapped(item.title),
+              ),
+
+              const SizedBox(height: 28),
+
+              Text(
+                'Browse all',
+                style: AppTypography.titleLarge.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 14),
+              BrowseAllGrid(
+                categories: _categories,
+                onCategoryTap: (cat) => _onCategoryTapped(cat.label),
+              ),
+            ],
           ],
         ),
       ),
